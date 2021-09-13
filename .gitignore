@@ -21,3 +21,8 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Cordova
+/cordovasource/platforms
+/cordovasource/plugins
+/public/cordova.js
