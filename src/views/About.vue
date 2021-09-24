@@ -2,15 +2,24 @@
   <div>
     <button @click="doBle">Scan: start</button>
     <p>{{ text }}</p>
+
+
+  
+    <div v-for="(meesha, i) in foundMeeshas" :key="i">
+     <div @click="connect(meesha)">
+       <h3>{{ i }}</h3> <b>{{ meesha.name }}</b> <i>(id:{{ meesha.ident }})</i> : Signal quality: {{ Math.round(100 + meesha.rssi / 2.55) }} %
+     </div> 
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
 import BLABLA from "@/types/ble";
-
+ 
 @Component
 export default class About extends Vue {
+  private foundMeeshas: any[] = []
   private ble!: BLABLA;
   private abl!: any;
   private text = "";
@@ -49,11 +58,13 @@ export default class About extends Vue {
     );
   }
   doBle() {
+    this.foundMeeshas = []
     this.abl.startScan(
       (a: any) => {
         //if(a.name.toLowerCase().includes("mee")) alert(atob(a.advertisement));
-
-        return atob(a.advertisement).includes("mis") ? this.exit(a) : "";
+        if(this.foundMeeshas.filter(b => b.name == a.name && b.advertisement == a.advertisement).length > 0) return;
+        
+        return atob(a.advertisement).includes("mis") ? this.handleZ(a) : false;
       },
       (a: any) => alert(JSON.stringify(a)),
       {}
@@ -66,37 +77,16 @@ export default class About extends Vue {
       );
     }, 2000);
   }
-  exit(a: any) {
-    this.abl.stopScan(
-      () => null,
-      () => true
-    );
-    this.text = new Date().toString();
-    this.text += `\n Advertising val: \n${
-      atob(a.advertisement).split("mis")[1]
-    }`;
+  handleZ (a: any) {
+    a.ident = atob(a.advertisement).split("mis")[1]
+    this.foundMeeshas.push(a)
+  }
 
-    this.abl.connect(
-      (status: any) => {
-        this.text = JSON.stringify(status);
-        this.continue(a);
-      },
-      (status: any) => {
-        this.text = JSON.stringify(status);
-        this.abl.reconnect(
-          (status: any) => {
-            this.text = JSON.stringify(status);
-            this.continue(a);
-          },
-          (status: any) => {
-            this.text = JSON.stringify(status);
-            this.continue(a);
-          },
-          { address: a.address }
-        );
-      },
-      { address: a.address }
-    );
+  connect(a: any) {
+    this.abl.disconnect(() => true, () => true, {address: a.address})
+    this.abl.close(() => true, () => true, {address: a.address})
+
+    this.abl.connect((a: any) => alert(JSON.stringify(a)), (a: any) => alert(JSON.stringify(a)), {address: a.address})
   }
 }
 </script>
